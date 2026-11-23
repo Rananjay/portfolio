@@ -24,6 +24,12 @@ import {
   services,
   projects,
 } from "./portfolio";
+import { AuthProvider } from "./auth/AuthContext";
+import AccountNav from "./auth/AccountNav";
+import RequireAuth from "./auth/RequireAuth";
+import { SignIn, SignUp } from "./auth/AuthPages";
+import Profile from "./auth/Profile";
+import AdminDashboard from "./admin/AdminDashboard";
 
 const navigation = [
   ["/", "Home"],
@@ -32,6 +38,14 @@ const navigation = [
   ["/education", "Education"],
   ["/services", "Services"],
   ["/contact", "Contact"],
+];
+
+const pageTitles = [
+  ...navigation,
+  ["/signin", "Sign in"],
+  ["/signup", "Create account"],
+  ["/profile", "Profile"],
+  ["/admin", "Admin"],
 ];
 
 function PageHeading({ eyebrow, title, children }) {
@@ -49,7 +63,7 @@ function Layout() {
 
   useEffect(() => {
     window.scrollTo(0, 0);
-    const current = navigation.find(([path]) => path === location.pathname);
+    const current = pageTitles.find(([path]) => path === location.pathname);
     document.title = `${current?.[1] || "Portfolio"} | ${profile.name}`;
   }, [location.pathname]);
 
@@ -70,6 +84,7 @@ function Layout() {
                 {label}
               </NavLink>
             ))}
+            <AccountNav />
           </nav>
         </div>
       </header>
@@ -82,6 +97,10 @@ function Layout() {
           <Route path="/education" element={<Education />} />
           <Route path="/services" element={<Services />} />
           <Route path="/contact" element={<Contact />} />
+          <Route path="/signin" element={<SignIn />} />
+          <Route path="/signup" element={<SignUp />} />
+          <Route path="/profile" element={<RequireAuth><Profile /></RequireAuth>} />
+          <Route path="/admin" element={<RequireAuth admin><AdminDashboard /></RequireAuth>} />
           <Route path="*" element={<NotFound />} />
         </Routes>
   </main>
@@ -432,5 +451,11 @@ function NotFound() {
 }
 
 export default function App() {
-  return <HashRouter><Layout /></HashRouter>;
+  return (
+    <HashRouter>
+      <AuthProvider>
+        <Layout />
+      </AuthProvider>
+    </HashRouter>
+  );
 }
