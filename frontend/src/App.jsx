@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { Analytics } from "@vercel/analytics/react";
 import {
   HashRouter,
   Routes,
@@ -83,8 +84,10 @@ function Layout() {
           <Route path="/contact" element={<Contact />} />
           <Route path="*" element={<NotFound />} />
         </Routes>
-      </main>
-
+  </main>
+  {/* HashRouter keeps routes in the URL hash, so pass the route explicitly to record each page view. */}
+  <Analytics route={location.pathname} path={location.pathname} />
+  
       <footer className="container footer">
         <span>© {new Date().getFullYear()} {profile.name}</span>
         <span>Built with React. Designed with purpose.</span>
