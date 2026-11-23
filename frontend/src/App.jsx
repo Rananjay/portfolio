@@ -101,7 +101,7 @@ function Home() {
     <>
       {location.state?.contactCaptured && (
         <div className="notice" role="status">
-          Your message was captured for this demo. No email was sent.
+          Thanks, your message was sent. I&apos;ll get back to you soon.
         </div>
       )}
 
@@ -342,23 +342,35 @@ function Contact() {
     firstname: "", lastname: "", phone: "", email: "", message: "",
   });
   const [error, setError] = useState("");
+  const [submitting, setSubmitting] = useState(false);
 
   function handleChange(event) {
     const { name, value } = event.target;
     setForm(previous => ({ ...previous, [name]: value }));
   }
 
-  function handleSubmit(event) {
+  async function handleSubmit(event) {
     event.preventDefault();
     setError("");
+    setSubmitting(true);
 
-    // Assignment 1 demo: capture the form in this tab, then return Home.
-    // No email or backend delivery is claimed.
     try {
-      sessionStorage.setItem("portfolioContact", JSON.stringify(form));
+      const response = await fetch("/api/contacts", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(form),
+      });
+
+      if (!response.ok) {
+        const data = await response.json().catch(() => ({}));
+        throw new Error(data.message || "Your message could not be sent.");
+      }
+
       navigate("/", { state: { contactCaptured: true } });
-    } catch {
-      setError("Your browser could not save the demo message. Please contact me by email.");
+    } catch (submitError) {
+      setError(`${submitError.message} Please try again or contact me by email.`);
+    } finally {
+      setSubmitting(false);
     }
   }
 
@@ -376,7 +388,7 @@ function Contact() {
           <a className="contact-email" href={`mailto:${profile.email}`}>{profile.email}</a>
           <p className="location"><MapPin size={16} /> {profile.location}</p>
           <hr />
-          <p>This demonstration form captures your message in this browser tab and returns you Home. It does not send an email.</p>
+          <p>Messages sent with this form are saved securely, and I&apos;ll reply by email.</p>
         </aside>
 
         <form className="card contact-form" onSubmit={handleSubmit}>
@@ -398,7 +410,9 @@ function Contact() {
             <textarea name="message" value={form.message} onChange={handleChange} required rows={5} maxLength={3000} />
           </label>
           {error && <p role="alert">{error}</p>}
-          <button className="button" type="submit">Capture message <ArrowUpRight size={18} /></button>
+          <button className="button" type="submit" disabled={submitting} aria-busy={submitting}>
+            {submitting ? "Sending…" : "Send message"} <ArrowUpRight size={18} />
+          </button>
         </form>
       </div>
     </section>
