@@ -1,9 +1,35 @@
+import { useState } from "react";
 import useAdminResource from "./useAdminResource";
 import { DeleteButton, PanelState } from "./PanelState";
 import { formatDate } from "../api";
 
 export default function Messages() {
-  const { records, error, isLoading, remove } = useAdminResource("contacts");
+  const { records, error, isLoading, remove, update } = useAdminResource("contacts");
+  const [editingId, setEditingId] = useState(null);
+  const [draft, setDraft] = useState("");
+  const [saving, setSaving] = useState(false);
+  const [saveError, setSaveError] = useState("");
+
+  async function saveMessage(event, record) {
+    event.preventDefault();
+    if (saving) return;
+    const message = draft.trim();
+    if (!message) {
+      setSaveError("Enter a message before saving.");
+      return;
+    }
+    setSaving(true);
+    setSaveError("");
+    try {
+      const { firstname, lastname, email, phone } = record;
+      await update(record._id, { firstname, lastname, email, phone: phone ?? "", message });
+      setEditingId(null);
+    } catch (err) {
+      setSaveError(err.message || "Could not save the message.");
+    } finally {
+      setSaving(false);
+    }
+  }
 
   return (
     <div>
@@ -31,9 +57,28 @@ export default function Messages() {
                     {message.createdAt && <> · {formatDate(message.createdAt)}</>}
                   </p>
                 </div>
-                <DeleteButton label={`message from ${name}`} onDelete={() => remove(message._id)} />
+                {editingId === null && (
+                  <div>
+                    <button type="button" onClick={() => {
+                      setEditingId(message._id);
+                      setDraft(message.message);
+                      setSaveError("");
+                    }}>Edit</button>
+                    <DeleteButton label={`message from ${name}`} onDelete={() => remove(message._id)} />
+                  </div>
+                )}
               </div>
-              <p className="record-body">{message.message}</p>
+              {editingId === message._id ? (
+                <form onSubmit={event => saveMessage(event, message)}>
+                  <label>
+                    Message
+                    <textarea value={draft} onChange={event => setDraft(event.target.value)} disabled={saving} required />
+                  </label>
+                  {saveError && <p role="alert">{saveError}</p>}
+                  <button type="submit" disabled={saving}>{saving ? "Saving…" : "Save"}</button>
+                  <button type="button" disabled={saving} onClick={() => setEditingId(null)}>Cancel</button>
+                </form>
+              ) : <p className="record-body">{message.message}</p>}
             </li>
           );
         })}
